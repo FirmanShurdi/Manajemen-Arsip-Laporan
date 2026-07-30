@@ -1,10 +1,19 @@
 const { Op } = require("sequelize")
-const users = require("../../../Manajemen-Clearance-Kapal-Tradisional-main/backend/model/userModel")
+const users = require("../model/userModel")
+const role = require("../model/roleModel")
 
+// Hanya superuser yang boleh akses
 const adminAuth = async (req, res, next) => {
     try {
         let id = req.user.id
-        let data = await users.findOne({ where: { id_user: id, role: "superuser" } })
+        let data = await users.findOne({
+            where: { id_user: id },
+            include: [{
+                model: role,
+                where: { nama: "superuser" },
+                required: true
+            }]
+        })
 
         if (!data) return res.status(401).json({ msg: "Anda tidak memiliki akses" })
 
@@ -15,17 +24,20 @@ const adminAuth = async (req, res, next) => {
     }
 }
 
+// Koordinator atau superuser yang boleh akses
 const semiAdminAuth = async (req, res, next) => {
     try {
         let id = req.user.id
-        let data = await users.findOne({ 
-            where: { id_user: id, 
-                [Op.or]: [
-                    {role: "koordinator"}, 
-                    {role: "superuser"}
-                ]
-            } 
-            })
+        let data = await users.findOne({
+            where: { id_user: id },
+            include: [{
+                model: role,
+                where: {
+                    nama: { [Op.in]: ["koordinator", "superuser"] }
+                },
+                required: true
+            }]
+        })
 
         if (!data) return res.status(401).json({ msg: "Anda tidak memiliki akses" })
 
@@ -36,12 +48,22 @@ const semiAdminAuth = async (req, res, next) => {
     }
 }
 
+// User hanya bisa akses datanya sendiri, kecuali superuser
 const userAuth = async (req, res, next) => {
     try {
         let id = req.params.id
-        let data = await users.findOne({ where: { id_user: req.user.id } })
+        let data = await users.findOne({
+            where: { id_user: req.user.id },
+            include: [{ model: role }]
+        })
 
-        if(data.id_user != id && data.role != 'superuser') return res.status(401).json({ msg: "Anda tidak memiliki akses" })
+        if (!data) return res.status(401).json({ msg: "User tidak ditemukan" })
+
+        const namaRole = data.role?.nama || ""
+
+        if (data.id_user != id && namaRole !== "superuser") {
+            return res.status(401).json({ msg: "Anda tidak memiliki akses" })
+        }
 
         next()
     } catch (error) {
@@ -50,4 +72,4 @@ const userAuth = async (req, res, next) => {
     }
 }
 
-module.exports = {adminAuth, semiAdminAuth, userAuth}
+module.exports = { adminAuth, semiAdminAuth, userAuth }
