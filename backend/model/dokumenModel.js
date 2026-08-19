@@ -1,7 +1,7 @@
-const { DataTypes } = require("sequelize")
-const { db } = require("../config/db")
-const layananOperasional = require("./layananOperasionalModel")
-const users = require("./userModel")
+const { DataTypes } = require("sequelize");
+const { db } = require("../config/db");
+const arsip = require("./arsipModel");
+const users = require("./userModel");
 
 const dokumen = db.define("dokumen", {
     id_dokumen: {
@@ -9,11 +9,11 @@ const dokumen = db.define("dokumen", {
         primaryKey: true,
         autoIncrement: true
     },
-    id_layanan: {
+    id_arsip: {
         type: DataTypes.INTEGER,
         references: {
-            model: layananOperasional,
-            key: "id_layanan"
+            model: arsip,
+            key: "id_arsip"
         },
         onDelete: "CASCADE",
         onUpdate: "CASCADE"
@@ -38,6 +38,6 @@ const dokumen = db.define("dokumen", {
 }, {
     freezeTableName: true,
     timestamps: false
-})
+});
 
-module.exports = dokumen
+module.exports = dokumen;

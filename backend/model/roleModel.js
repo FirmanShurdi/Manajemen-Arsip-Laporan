@@ -7,7 +7,11 @@ const role = db.define("role", {
         primaryKey: true,
         autoIncrement: true
     },
-    nama: DataTypes.STRING(50)
+    nama: DataTypes.STRING(50),
+    tipe_role: {
+        type: DataTypes.ENUM('admin', 'pegawai'),
+        defaultValue: 'pegawai'
+    }
 }, {
     freezeTableName: true,
     timestamps: false

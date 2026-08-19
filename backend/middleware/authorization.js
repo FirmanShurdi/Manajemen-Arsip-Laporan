@@ -1,75 +1,68 @@
-const { Op } = require("sequelize")
-const users = require("../model/userModel")
-const role = require("../model/roleModel")
+const { users, role } = require("../model/association");
 
-// Hanya superuser yang boleh akses
 const adminAuth = async (req, res, next) => {
-    try {
-        let id = req.user.id
-        let data = await users.findOne({
-            where: { id_user: id },
-            include: [{
-                model: role,
-                where: { nama: "superuser" },
-                required: true
-            }]
-        })
+  try {
+    const userId = req.user?.id || req.user?.id_user;
+    if (!userId) return res.status(401).json({ success: false, message: "Sesi tidak valid! Silakan login ulang.", msg: "Sesi tidak valid" });
 
-        if (!data) return res.status(401).json({ msg: "Anda tidak memiliki akses" })
+    const user = await users.findByPk(userId, {
+      include: [{ model: role, attributes: ['id_role', 'nama', 'tipe_role'] }]
+    });
 
-        next()
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({ msg: "terjadi kesalahan pada middleware" })
+    const isSuperAdmin = Number(user?.id_role || req.user.id_role) === 1;
+
+    if (!user || !isSuperAdmin) {
+      return res.status(403).json({ success: false, message: "Akses ditolak: Akses ini khusus untuk Superadmin.", msg: "Akses ditolak: Hanya untuk Superadmin" });
     }
-}
 
-// Koordinator atau superuser yang boleh akses
+    next();
+  } catch (error) {
+    console.error("Error pada adminAuth middleware:", error);
+    return res.status(500).json({ success: false, message: "Terjadi kesalahan pada middleware otorisasi", msg: "Terjadi kesalahan pada middleware otorisasi" });
+  }
+};
+
 const semiAdminAuth = async (req, res, next) => {
-    try {
-        let id = req.user.id
-        let data = await users.findOne({
-            where: { id_user: id },
-            include: [{
-                model: role,
-                where: {
-                    nama: { [Op.in]: ["koordinator", "superuser"] }
-                },
-                required: true
-            }]
-        })
+  try {
+    const userId = req.user?.id || req.user?.id_user;
+    if (!userId) return res.status(401).json({ success: false, message: "Sesi tidak valid! Silakan login ulang.", msg: "Sesi tidak valid" });
 
-        if (!data) return res.status(401).json({ msg: "Anda tidak memiliki akses" })
+    const user = await users.findByPk(userId, {
+      include: [{ model: role, attributes: ['id_role', 'nama', 'tipe_role'] }]
+    });
 
-        next()
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({ msg: "terjadi kesalahan pada middleware" })
+    const roleId = user?.id_role || req.user.id_role;
+    const tipeRole = user?.role?.tipe_role || req.user?.tipe_role;
+
+    // Boleh diakses jika tipe_role === 'admin' ATAU id_role 1 & 2 (Superadmin & Koordinator)
+    const hasAdminAccess = tipeRole === 'admin' || [1, 2].includes(Number(roleId));
+
+    if (!user || !hasAdminAccess) {
+      return res.status(403).json({ success: false, message: "Akses ditolak: Membutuhkan akses Admin / Koordinator.", msg: "Akses ditolak: Membutuhkan akses Admin / Koordinator" });
     }
-}
 
-// User hanya bisa akses datanya sendiri, kecuali superuser
+    next();
+  } catch (error) {
+    console.error("Error pada semiAdminAuth middleware:", error);
+    return res.status(500).json({ success: false, message: "Terjadi kesalahan pada middleware otorisasi", msg: "Terjadi kesalahan pada middleware otorisasi" });
+  }
+};
+
 const userAuth = async (req, res, next) => {
-    try {
-        let id = req.params.id
-        let data = await users.findOne({
-            where: { id_user: req.user.id },
-            include: [{ model: role }]
-        })
+  try {
+    const userId = req.user?.id || req.user?.id_user;
+    if (!userId) return res.status(401).json({ success: false, message: "Sesi tidak valid! Silakan login kembali.", msg: "Sesi tidak valid" });
 
-        if (!data) return res.status(401).json({ msg: "User tidak ditemukan" })
+    next();
+  } catch (error) {
+    console.error("Error pada userAuth middleware:", error);
+    return res.status(500).json({ success: false, message: "Terjadi kesalahan pada middleware otorisasi", msg: "Terjadi kesalahan pada middleware otorisasi" });
+  }
+};
 
-        const namaRole = data.role?.nama || ""
-
-        if (data.id_user != id && namaRole !== "superuser") {
-            return res.status(401).json({ msg: "Anda tidak memiliki akses" })
-        }
-
-        next()
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({ msg: "terjadi kesalahan pada middleware" })
-    }
-}
-
-module.exports = { adminAuth, semiAdminAuth, userAuth }
+module.exports = { 
+  adminAuth, 
+  superAdminAuth: adminAuth, 
+  semiAdminAuth, 
+  userAuth 
+};

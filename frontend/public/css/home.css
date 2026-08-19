@@ -42,7 +42,8 @@
     color: #f3f4f6;
 }
 
-.layanan-btn {
+.layanan-btn,
+.arsip-btn {
     background-color: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(4px);
     border: 1px solid rgba(255, 255, 255, 0.4);
@@ -59,7 +60,8 @@
     transition: all 0.3s ease;
 }
 
-.layanan-btn:hover {
+.layanan-btn:hover,
+.arsip-btn:hover {
     background-color: rgba(255, 255, 255, 0.25);
 }
 
@@ -171,6 +173,7 @@
 .services-section {
     position: relative;
     padding: 60px 0 120px;
+    scroll-margin-top: 65px;
     background-color: #eef2f6;
     background-image:
         linear-gradient(177deg, #ffffff 18%, transparent 18.1%),
@@ -207,15 +210,52 @@
 .services-container {
     position: relative;
     z-index: 2;
-    max-width: 1200px;
+    max-width: 1300px;
+    width: 100%;
     margin: 0 auto;
     padding: 0 40px;
 }
 
 .services-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    gap: 25px;
+    /* Default: 3 kolom penuh untuk layar lebar PC kantor */
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+}
+
+/* PC & Laptop standar (1280px - 1440px) */
+@media (min-width: 1280px) and (max-width: 1440px) {
+    .services-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+    }
+}
+
+/* Monitor lebar (1441px ke atas) */
+@media (min-width: 1441px) {
+    .services-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 32px;
+    }
+    .services-container {
+        max-width: 1380px;
+    }
+}
+
+/* Tablet landscape / PC kecil */
+@media (max-width: 1280px) and (min-width: 769px) {
+    .services-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 22px;
+    }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .services-grid {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
 }
 
 .service-card {
@@ -287,15 +327,22 @@
 .service-content {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2.5px;
     text-align: left;
 }
 
+/* atur card */
 .service-name {
     font-size: 18px;
     font-weight: 700;
     color: #0b1120;
     margin: 0;
+    /* Paksa tinggi judul setara 2 baris: jika 1 baris berada di tengah, jika 2 baris memenuhi dari atas */
+    min-height: 54px;
+    display: flex;
+    align-items: center;
+    line-height: 1.35;
+    margin-top: 5px;
 }
 
 .service-category {
@@ -304,6 +351,11 @@
     color: #64748b;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    /* Paksa tinggi slot kategori setara 2 baris: jika 1 baris di tengah, jika 2 baris memenuhi dari atas */
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    line-height: 1.35;
 }
 
 .service-desc {

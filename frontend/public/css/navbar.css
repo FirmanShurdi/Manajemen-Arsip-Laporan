@@ -123,15 +123,21 @@ header.scrolled-grey .login-btn {
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
-.nav-link.active::after {
+.nav-link::after {
     content: '';
     position: absolute;
     bottom: 0;
-    left: 0;
-    width: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0%;
     height: 4px;
     background-color: white;
     border-radius: 4px 4px 0 0;
+    transition: width 0.4s ease-in-out; /* Animasi lambat dan halus */
+}
+
+.nav-link.active::after {
+    width: 100%;
 }
 
 .login-btn {
@@ -158,5 +164,4 @@ header.scrolled-grey .login-btn {
 .login-btn:hover {
     background-color: rgba(255, 255, 255, 0.2);
     border-color: rgba(255, 255, 255, 0.8);
-    transform: translateY(-2px);
 }
