@@ -303,6 +303,7 @@ export default function Dokumen() {
               }}
               sortConfig={sortConfig}
               startIndex={startIndex}
+              totalData={totalData}
             />
           )}
 

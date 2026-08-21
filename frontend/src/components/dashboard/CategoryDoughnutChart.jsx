@@ -5,7 +5,7 @@ const CategoryDoughnutChart = ({ data = [], datas = [] }) => {
   const chartInput = (Array.isArray(datas) && datas.length > 0) ? datas : data;
 
   const seriesData = Array.isArray(chartInput) && chartInput.length > 0
-    ? chartInput.map(() => 1)
+    ? chartInput.map(d => (typeof d.value === 'number' ? d.value : (d.count || 1)))
     : [0];
 
   const seriesLabels = Array.isArray(chartInput) && chartInput.length > 0

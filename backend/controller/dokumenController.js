@@ -349,25 +349,36 @@ const getDokumenPerBulan = async (req, res) => {
   }
 };
 
-// 9. Dashboard Stats: Distribusi Per Kategori
+// 9. Dashboard Stats: Distribusi Per Kategori (Jumlah Sub-Arsip per Kategori Induk)
 const getDokumenTotalKategori = async (req, res) => {
   try {
-    const categoryDistribution = await dokumen.findAll({
-      attributes: [
-        [Sequelize.col('arsip.nama_arsip'), 'categoryName'],
-        [Sequelize.col('arsip.warna'), 'color'],
-        [Sequelize.fn('COUNT', Sequelize.col('dokumen.id_dokumen')), 'total']
+    const list = await kategoriArsip.findAll({
+      attributes: ['id_kategori', 'nama_kategori'],
+      include: [
+        {
+          model: arsip,
+          attributes: ['id_arsip']
+        }
       ],
-      include: [{ model: arsip, as: 'arsip', attributes: [] }],
-      group: ['arsip.id_arsip', 'arsip.nama_arsip', 'arsip.warna'],
-      raw: true
+      order: [['id_kategori', 'ASC']]
     });
 
-    const defaultDatas = categoryDistribution.map(cat => ({
-      label: cat.categoryName || 'Tanpa Kategori',
-      value: parseInt(cat.total, 10) || 0,
-      warna: cat.color || '#3B82F6'
-    }));
+    const colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#6366F1'];
+
+    const defaultDatas = list.map((item, idx) => {
+      const plain = item.get({ plain: true });
+      const subArsipCount = Array.isArray(plain.arsips) ? plain.arsips.length : 0;
+      return {
+        id_kategori: plain.id_kategori,
+        kategori_arsip: plain.nama_kategori,
+        nama_kategori: plain.nama_kategori,
+        label: plain.nama_kategori,
+        name: plain.nama_kategori,
+        value: subArsipCount,
+        count: subArsipCount,
+        warna: colors[idx % colors.length]
+      };
+    });
 
     res.status(200).json({ success: true, defaultDatas });
   } catch (error) {

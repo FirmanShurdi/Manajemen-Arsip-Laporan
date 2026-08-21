@@ -1,8 +1,8 @@
 import React from 'react';
 
-export default function RowsPerPageSelect({ value, onChange, options = ['5', '10', '20', '50', 'Semua'] }) {
+export default function RowsPerPageSelect({ value, onChange, options = ['5', '10', '20', '50', 'Semua'], totalItems = 0 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
       <span>Tampilkan</span>
       <select
         value={value}
@@ -13,7 +13,7 @@ export default function RowsPerPageSelect({ value, onChange, options = ['5', '10
           <option key={opt} value={opt}>{opt}</option>
         ))}
       </select>
-      <span>baris</span>
+      <span>data dari <strong className="font-semibold text-slate-800">{totalItems}</strong> data</span>
     </div>
   );
 }

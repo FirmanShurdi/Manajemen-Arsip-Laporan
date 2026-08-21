@@ -9,7 +9,8 @@ export default function DokumenTable({
   onViewFile,
   onSort,
   sortConfig,
-  startIndex = 1
+  startIndex = 1,
+  totalData = 0
 }) {
   const getSortIcon = (key) => (
     <svg className={`ml-1.5 h-3.5 w-3.5 inline-block transition-transform ${sortConfig?.key === key ? 'text-blue-600' : 'text-slate-300'}`} viewBox="0 0 20 20" fill="currentColor">
@@ -43,10 +44,11 @@ export default function DokumenTable({
               const parentCat = item.arsip?.kategori_arsip?.nama_kategori;
               const subCat = item.arsip?.nama_arsip || item.kategori_arsip?.nama_kategori || item.kategori_dokumen?.nama_kategori || 'Umum';
               const showBoth = parentCat && parentCat !== subCat;
+              const itemNumber = totalData > 0 ? (totalData - (startIndex - 1) - index) : (startIndex + index);
 
               return (
                 <tr key={item.id_dokumen} className="hover:bg-blue-50/40 transition-colors">
-                  <td className="px-4 py-3.5 text-center text-sm font-semibold text-slate-500">{startIndex + index}</td>
+                  <td className="px-4 py-3.5 text-center text-sm font-semibold text-slate-500">{itemNumber}</td>
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-3">
                       <div 
