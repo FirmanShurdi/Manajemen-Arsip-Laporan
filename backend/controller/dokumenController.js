@@ -2,6 +2,7 @@ const { Op, Sequelize } = require('sequelize');
 const path = require('path');
 const fs = require('fs');
 const { dokumen, arsip, kategoriArsip, users } = require('../model/association');
+const { deleteDocumentFile } = require('../helpers/otomasiFolder');
 
 // Helper: Standard Include untuk query Sequelize
 const defaultInclude = [
@@ -29,24 +30,19 @@ const formatDokumenPayload = (item) => {
   return plain;
 };
 
-// Helper: Salin file terunggah ke folder public & uploads
+// Helper: Salin file terunggah ke folder uploads backend
 const copyFileToFolders = (file, parentCategory = 'Umum', subfolder = 'Arsip') => {
   if (!file) return;
-  const targets = [
-    path.join(__dirname, '../../frontend/public/File', parentCategory, subfolder),
-    path.join(__dirname, '../uploads', parentCategory, subfolder)
-  ];
-  targets.forEach(targetDir => {
-    try {
-      if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
-      fs.copyFileSync(file.path, path.join(targetDir, file.filename));
-    } catch (err) {
-      console.error(`Error copying file to ${targetDir}:`, err);
-    }
-  });
+  const targetDir = path.join(__dirname, '../uploads', parentCategory, subfolder);
+  try {
+    if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+    fs.copyFileSync(file.path, path.join(targetDir, file.filename));
+  } catch (err) {
+    console.error(`Error copying file to ${targetDir}:`, err);
+  }
 };
 
-// Helper: Mencari URL file dokumen yang presisi di direktori
+// Helper: Mencari URL file dokumen yang presisi di direktori uploads
 const resolveFileUrl = (doc) => {
   const parentCat = doc.arsip?.kategori_arsip?.nama_kategori || doc.kategori_arsip?.nama_kategori || doc.kategori_dokumen?.nama_kategori || 'Umum';
   const subCat = doc.arsip?.nama_arsip || doc.kategori_arsip?.nama_arsip || doc.nama_arsip || 'Arsip';
@@ -55,9 +51,8 @@ const resolveFileUrl = (doc) => {
   const fileNameWithExt = baseName.toLowerCase().endsWith(`.${ext}`) ? baseName : `${baseName}.${ext}`;
 
   const checkDirs = [
-    { dir: path.join(__dirname, '../../frontend/public/File', parentCat, subCat), prefix: `/File/${encodeURIComponent(parentCat)}/${encodeURIComponent(subCat)}` },
-    { dir: path.join(__dirname, '../../frontend/public/File', subCat), prefix: `/File/${encodeURIComponent(subCat)}` },
-    { dir: path.join(__dirname, '../../frontend/public/File', parentCat), prefix: `/File/${encodeURIComponent(parentCat)}` }
+    { dir: path.join(__dirname, '../uploads', parentCat, subCat), prefix: `/uploads/${encodeURIComponent(parentCat)}/${encodeURIComponent(subCat)}` },
+    { dir: path.join(__dirname, '../../frontend/public/File', parentCat, subCat), prefix: `/File/${encodeURIComponent(parentCat)}/${encodeURIComponent(subCat)}` }
   ];
 
   for (const { dir, prefix } of checkDirs) {
@@ -71,7 +66,7 @@ const resolveFileUrl = (doc) => {
     }
   }
 
-  return `/File/${encodeURIComponent(parentCat)}/${encodeURIComponent(subCat)}/${encodeURIComponent(fileNameWithExt)}`;
+  return `/uploads/${encodeURIComponent(parentCat)}/${encodeURIComponent(subCat)}/${encodeURIComponent(fileNameWithExt)}`;
 };
 
 // --- CONTROLLERS --- //
@@ -83,16 +78,18 @@ const getAllDokumen = async (req, res) => {
     const rawLimit = req.query.limit;
     const limit = (rawLimit === '0' || rawLimit === 0) ? 0 : (parseInt(rawLimit, 10) || 5);
     const searchTerm = req.query.searchTerm || req.query.search || '';
-    const categoryFilterId = req.query.id_arsip || req.query.id_kategori || '';
+    const idArsipParam = req.query.id_arsip || '';
+    const idKategoriParam = req.query.id_kategori || '';
     const sortDirection = (req.query.sort || 'DESC').toUpperCase();
     const sortField = req.query.data_name || 'created_at';
 
     const andConditions = [];
 
-    if (categoryFilterId) {
-      andConditions.push({
-        [Op.or]: [{ id_arsip: categoryFilterId }, { '$arsip.id_kategori$': categoryFilterId }]
-      });
+    if (idArsipParam) {
+      andConditions.push({ id_arsip: idArsipParam });
+    }
+    if (idKategoriParam) {
+      andConditions.push({ '$arsip.id_kategori$': idKategoriParam });
     }
 
     if (searchTerm) {
@@ -248,10 +245,28 @@ const updateDokumen = async (req, res) => {
 // 5. Hapus Dokumen
 const deleteDokumen = async (req, res) => {
   try {
-    const data = await dokumen.findByPk(req.params.id);
+    const data = await dokumen.findByPk(req.params.id, {
+      include: [
+        {
+          model: arsip,
+          as: 'arsip',
+          include: [{ model: kategoriArsip, as: 'kategori_arsip' }]
+        }
+      ]
+    });
     if (!data) return res.status(404).json({ success: false, message: 'Dokumen tidak ditemukan', msg: 'Dokumen tidak ditemukan' });
 
+    const parentCat = data.arsip?.kategori_arsip?.nama_kategori || 'Umum';
+    const subCat = data.arsip?.nama_arsip || 'Arsip';
+    const ext = (data.tipe_file || 'pdf').toLowerCase().replace('.', '');
+    const baseName = (data.nama_dokumen || 'dokumen').trim();
+    const fileNameWithExt = baseName.toLowerCase().endsWith(`.${ext}`) ? baseName : `${baseName}.${ext}`;
+
     await data.destroy();
+
+    // Otomatis hapus berkas fisik dari disk
+    deleteDocumentFile(parentCat, subCat, fileNameWithExt);
+
     res.status(200).json({ success: true, message: 'Dokumen berhasil dihapus', msg: 'Dokumen berhasil dihapus' });
   } catch (error) {
     console.error('Error in deleteDokumen:', error);
@@ -289,24 +304,44 @@ const getDokumenPerBulan = async (req, res) => {
     const currentYear = new Date().getFullYear();
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
     const monthlyCounts = new Array(12).fill(0);
+    const monthlyDetails = Array.from({ length: 12 }, () => ({}));
 
     const allDocs = await dokumen.findAll({
-      attributes: ['created_at'],
-      where: { created_at: { [Op.gte]: new Date(`${currentYear}-01-01T00:00:00.000Z`) } },
-      raw: true
+      attributes: ['created_at', 'id_arsip'],
+      include: [
+        {
+          model: arsip,
+          as: 'arsip',
+          attributes: ['nama_arsip', 'warna']
+        }
+      ],
+      where: { created_at: { [Op.gte]: new Date(`${currentYear}-01-01T00:00:00.000Z`) } }
     });
 
-    allDocs.forEach(doc => {
+    allDocs.forEach(docItem => {
+      const doc = docItem.get({ plain: true });
       if (doc.created_at) {
         const d = new Date(doc.created_at);
         if (d.getFullYear() === currentYear) {
           const m = d.getMonth();
-          if (m >= 0 && m < 12) monthlyCounts[m] += 1;
+          if (m >= 0 && m < 12) {
+            monthlyCounts[m] += 1;
+            const namaArsip = doc.arsip?.nama_arsip || 'Arsip Lainnya';
+            const warnaArsip = doc.arsip?.warna || '#3B82F6';
+            if (!monthlyDetails[m][namaArsip]) {
+              monthlyDetails[m][namaArsip] = { count: 0, warna: warnaArsip };
+            }
+            monthlyDetails[m][namaArsip].count += 1;
+          }
         }
       }
     });
 
-    const defaultData = months.map((month, idx) => ({ month, count: monthlyCounts[idx] }));
+    const defaultData = months.map((month, idx) => ({
+      month,
+      count: monthlyCounts[idx],
+      details: monthlyDetails[idx]
+    }));
     res.status(200).json({ success: true, defaultData });
   } catch (error) {
     console.error("Error in getDokumenPerBulan:", error);
@@ -320,16 +355,18 @@ const getDokumenTotalKategori = async (req, res) => {
     const categoryDistribution = await dokumen.findAll({
       attributes: [
         [Sequelize.col('arsip.nama_arsip'), 'categoryName'],
+        [Sequelize.col('arsip.warna'), 'color'],
         [Sequelize.fn('COUNT', Sequelize.col('dokumen.id_dokumen')), 'total']
       ],
       include: [{ model: arsip, as: 'arsip', attributes: [] }],
-      group: ['arsip.id_arsip', 'arsip.nama_arsip'],
+      group: ['arsip.id_arsip', 'arsip.nama_arsip', 'arsip.warna'],
       raw: true
     });
 
     const defaultDatas = categoryDistribution.map(cat => ({
       label: cat.categoryName || 'Tanpa Kategori',
-      value: parseInt(cat.total, 10) || 0
+      value: parseInt(cat.total, 10) || 0,
+      warna: cat.color || '#3B82F6'
     }));
 
     res.status(200).json({ success: true, defaultDatas });

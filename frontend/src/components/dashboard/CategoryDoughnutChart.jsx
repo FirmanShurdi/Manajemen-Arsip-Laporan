@@ -5,11 +5,11 @@ const CategoryDoughnutChart = ({ data = [], datas = [] }) => {
   const chartInput = (Array.isArray(datas) && datas.length > 0) ? datas : data;
 
   const seriesData = Array.isArray(chartInput) && chartInput.length > 0
-    ? chartInput.map(d => typeof d === 'number' ? d : (d?.value ?? d?.count ?? d?.total ?? 0))
+    ? chartInput.map(() => 1)
     : [0];
 
   const seriesLabels = Array.isArray(chartInput) && chartInput.length > 0
-    ? chartInput.map(d => d.label || d.name || d.nama_arsip || 'Kategori')
+    ? chartInput.map(d => d.kategori_arsip || d.kategori || d.kategori_dokumen || d.label || d.name || 'Kategori')
     : ['Tanpa Kategori'];
 
   const options = {
@@ -33,9 +33,9 @@ const CategoryDoughnutChart = ({ data = [], datas = [] }) => {
             show: true,
             total: {
               show: true,
-              label: 'Total Dokumen',
-              formatter: function (w) {
-                return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
+              label: 'Total Kategori',
+              formatter: function () {
+                return Array.isArray(chartInput) && chartInput.length > 0 ? chartInput.length : 0;
               }
             }
           }

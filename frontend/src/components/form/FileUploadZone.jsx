@@ -38,7 +38,7 @@ export default function FileUploadZone({
                 onPreviewFile(selectedFile || { nama_dokumen: currentFileName, file_url: currentFileUrl });
               }
             }}
-            className="z-20 cursor-pointer hover:scale-105 transition-transform"
+            className="relative z-10 cursor-pointer hover:scale-105 transition-transform"
             title="Klik untuk lihat pratinjau file"
           >
             <FileIcon tipeFile={fileExt} namaDokumen={activeName} className="h-12 w-12 shrink-0" />
@@ -52,7 +52,7 @@ export default function FileUploadZone({
                     onPreviewFile(selectedFile || { nama_dokumen: currentFileName, file_url: currentFileUrl });
                   }
                 }}
-                className="text-sm font-bold text-slate-800 hover:text-blue-600 truncate cursor-pointer z-20"
+                className="text-sm font-bold text-slate-800 hover:text-blue-600 truncate cursor-pointer relative z-10"
                 title="Klik untuk lihat pratinjau file"
               >
                 {activeName}
@@ -65,7 +65,7 @@ export default function FileUploadZone({
             </p>
           </div>
 
-          <div className="flex items-center gap-2 z-20 shrink-0">
+          <div className="flex items-center gap-2 relative z-10 shrink-0">
             {onPreviewFile && (
               <button
                 type="button"

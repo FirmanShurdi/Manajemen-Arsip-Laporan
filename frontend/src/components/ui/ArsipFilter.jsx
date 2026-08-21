@@ -15,7 +15,7 @@ export default function ArsipFilter({
   const filteredOptions = React.useMemo(() => {
     if (!selectedCategory) return arsipOptions;
     return arsipOptions.filter(item => {
-      const parentId = item.id_kategori || item.id_kategori_arsip || item.kategori_arsip?.id_kategori;
+      const parentId = item.id_kategori;
       const parentName = typeof item.kategori_arsip === 'object' ? item.kategori_arsip?.nama_kategori : item.kategori_arsip;
       return String(parentId) === String(selectedCategory) || String(parentName) === String(selectedCategory);
     });
@@ -27,7 +27,7 @@ export default function ArsipFilter({
       onChange={onChange}
       onClear={onClear}
       options={filteredOptions}
-      getOptionId={(item) => item.id_arsip || item.id_kategori || item.id}
+      getOptionId={(item) => item.id_arsip || item.id}
       getOptionLabel={(item) => item.nama_arsip || item.nama_kategori || item.nama}
       placeholder={placeholder}
       defaultLabel={defaultLabel}

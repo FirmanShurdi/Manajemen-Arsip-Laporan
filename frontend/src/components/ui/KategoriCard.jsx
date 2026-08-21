@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { backendURL } from '../../api/axiosInstance';
 
 const getLogoUrl = (foto) => {
@@ -7,9 +8,13 @@ const getLogoUrl = (foto) => {
   return `${backendURL}/${foto.replace(/^\//, '')}`;
 };
 
-const KategoriCard = ({ id_kategori, kategori_dokumen, nama_kategori, deskripsi, foto }) => {
+const KategoriCard = ({ id_arsip, id_kategori, kategori_dokumen, nama_kategori, deskripsi, foto }) => {
   let rawName = nama_kategori || 'Kategori Dokumen';
-  
+  let linkUrl = `/dokumen?id_arsip=${id_arsip}`;
+  if (id_kategori) {
+    linkUrl += `&id_kategori=${id_kategori}`;
+  }
+
   // Format title: Tambahkan kata "Arsip " di depannya jika belum ada
   const displayName = rawName.toLowerCase().startsWith('arsip ')
     ? rawName
@@ -19,15 +24,15 @@ const KategoriCard = ({ id_kategori, kategori_dokumen, nama_kategori, deskripsi,
   const displayFoto = foto;
 
   return (
-    <a href="#" className="service-card">
+    <Link to={linkUrl} className="service-card">
       <div className="service-logo-wrapper">
         <img
           src={getLogoUrl(displayFoto)}
           alt={displayName}
           className="service-logo-img"
-          onError={(e) => { 
+          onError={(e) => {
             e.target.onerror = null; // Mencegah infinite loop kedip-kedip saat image 404
-            e.target.src = '/kategori/default.png'; 
+            e.target.src = '/kategori/default.png';
           }}
         />
       </div>
@@ -36,7 +41,7 @@ const KategoriCard = ({ id_kategori, kategori_dokumen, nama_kategori, deskripsi,
         {displayCategoryTag && <span className="service-category">{displayCategoryTag.toUpperCase()}</span>}
         <p className="service-desc">{deskripsi}</p>
       </div>
-    </a>
+    </Link>
   );
 };
 

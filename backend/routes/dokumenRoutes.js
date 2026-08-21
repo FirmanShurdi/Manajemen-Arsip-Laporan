@@ -45,6 +45,6 @@ router.post('/', userAuth, handleFileUpload, uploadDokumen);
 router.put('/:id', userAuth, handleFileUpload, updateDokumen);
 router.post('/:id', userAuth, handleFileUpload, updateDokumen);
 
-router.delete('/:id', adminAuth, deleteDokumen);
+router.delete('/:id', userAuth, deleteDokumen);
 
 module.exports = router;

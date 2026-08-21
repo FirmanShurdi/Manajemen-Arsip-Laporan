@@ -1,7 +1,7 @@
 import React from 'react';
 
 // set ketinggian 
-export default function Flash({ toasts, removeToast, topClass = 'top-20' }) {
+export default function Flash({ toasts, removeToast, topClass = 'top-16' }) {
   if (!toasts || toasts.length === 0) return null;
 
   return (

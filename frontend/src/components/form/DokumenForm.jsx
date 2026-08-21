@@ -20,9 +20,13 @@ export default function DokumenForm({
   loadingLabel,
   handleSubmit, onCancel
 }) {
-  // filter arsip doc 
+  // Filter list Sub-Arsip presisi berdasarkan Kategori Utama yang dipilih
   const filteredSubArsip = selectedMainCategory
-    ? categoryList.filter(item => String(item.id_kategori || item.kategori_arsip?.id_kategori) === String(selectedMainCategory))
+    ? categoryList.filter(item => {
+        const pId = item.id_kategori;
+        const pName = typeof item.kategori_arsip === 'object' ? item.kategori_arsip?.nama_kategori : item.kategori_arsip;
+        return String(pId) === String(selectedMainCategory) || String(pName) === String(selectedMainCategory);
+      })
     : categoryList;
 
   const activeSubmitText = submitLabel || (isEdit ? 'Simpan Perubahan' : 'Unggah & Simpan Dokumen');
@@ -38,16 +42,21 @@ export default function DokumenForm({
         </div>
 
         {/* Filter Kategori Utama (Induk) */}
-        <div className="relative z-30">
+        <div className="relative z-40">
           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kategori Utama</label>
           <CategoryFilter 
             selectedCategory={selectedMainCategory} 
             onChange={(e) => {
               const val = e.target.value;
               setSelectedMainCategory && setSelectedMainCategory(val);
-              // Reset sub-arsip selection if it no longer belongs to the new category
+              // Reset sub-arsip jika tidak sesuai dengan Kategori Utama yang baru dipilih
               if (idKategori && val) {
-                const isValid = categoryList.some(item => String(item.id_arsip) === String(idKategori) && String(item.id_kategori || item.kategori_arsip?.id_kategori) === String(val));
+                const isValid = categoryList.some(item => {
+                  const isSubMatch = String(item.id_arsip) === String(idKategori);
+                  const pId = item.id_kategori;
+                  const pName = typeof item.kategori_arsip === 'object' ? item.kategori_arsip?.nama_kategori : item.kategori_arsip;
+                  return isSubMatch && (String(pId) === String(val) || String(pName) === String(val));
+                });
                 if (!isValid && setIdKategori) setIdKategori('');
               }
             }} 
@@ -59,12 +68,28 @@ export default function DokumenForm({
         </div>
 
         {/* Filter Nama Arsip Dokumen */}
-        <div className="relative z-20">
+        <div className="relative z-30">
           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Arsip Dokumen <span className="text-rose-500">*</span></label>
           <ArsipFilter 
             selectedArsip={idKategori} 
-            onChange={(e) => setIdKategori && setIdKategori(e.target.value)} 
-            onClear={() => setIdKategori && setIdKategori('')} 
+            onChange={(e) => {
+              const selectedSubId = e.target.value;
+              setIdKategori && setIdKategori(selectedSubId);
+              // Otomatis set Kategori Utama saat Sub-Arsip dipilih
+              if (selectedSubId && categoryList.length > 0) {
+                const item = categoryList.find(c => String(c.id_arsip) === String(selectedSubId));
+                if (item) {
+                  const pId = item.id_kategori;
+                  if (pId && setSelectedMainCategory) {
+                    setSelectedMainCategory(String(pId));
+                  }
+                }
+              }
+            }} 
+            onClear={() => {
+              setIdKategori && setIdKategori('');
+              setSelectedMainCategory && setSelectedMainCategory('');
+            }} 
             arsipOptions={filteredSubArsip} 
             placeholder="Pilih Nama Arsip Dokumen" 
             showIcon={false} 
@@ -72,14 +97,14 @@ export default function DokumenForm({
         </div>
 
         {/* Tanggal Terbit Dokumen */}
-        <div>
+        <div className="relative z-20">
           <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Tanggal Terbit Dokumen <span className="text-rose-500">*</span></label>
           <input type="date" required value={terbit} onChange={(e) => setTerbit(e.target.value)} className="w-full h-11 rounded-xl border border-slate-300 px-4 text-xs md:text-sm text-slate-800 bg-white outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 cursor-pointer transition-all" />
         </div>
       </div>
 
       {/* Upload Zone (Full Width) */}
-      <div>
+      <div className="relative z-10">
         <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Unggah Berkas File Dokumen {!isEdit && <span className="text-rose-500">*</span>}</label>
         <FileUploadZone 
           selectedFile={selectedFile} 

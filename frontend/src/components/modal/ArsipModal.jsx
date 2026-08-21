@@ -13,8 +13,11 @@ export default function ArsipModal({
   const [idKategori, setIdKategori] = useState('');
   const [namaArsip, setNamaArsip] = useState('');
   const [deskripsi, setDeskripsi] = useState('');
+  const [warna, setWarna] = useState('#3B82F6');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const PRESET_COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
 
   useEffect(() => {
     if (editingItem) {
@@ -25,11 +28,13 @@ export default function ArsipModal({
         const catId = editingItem.id_kategori || (editingItem.kategori_arsip?.id_kategori) || '';
         setIdKategori(catId);
         setNamaArsip(editingItem.nama_arsip || editingItem.nama_kategori || '');
+        setWarna(editingItem.warna || '#3B82F6');
         setDeskripsi(editingItem.deskripsi || '');
       }
     } else {
       setIdKategori('');
       setNamaArsip('');
+      setWarna('#3B82F6');
       setDeskripsi('');
     }
     setErrorMsg('');
@@ -76,6 +81,7 @@ export default function ArsipModal({
         await onSubmit({
           id_kategori: idKategori,
           nama_arsip: namaArsip.trim(),
+          warna: warna || '#3B82F6',
           deskripsi: deskripsi.trim()
         });
       }
@@ -126,6 +132,40 @@ export default function ArsipModal({
           className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
         />
       </div>
+
+      {!isKategoriMode && (
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            Warna Indikator Grafik <span className="text-slate-400 font-normal text-xs">(Pilih Warna Batang Dashboard)</span>
+          </label>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 p-1.5 bg-slate-50 border border-slate-200/80 rounded-xl">
+              {PRESET_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setWarna(c)}
+                  className={`w-6 h-6 rounded-lg transition-transform ${
+                    warna === c ? 'scale-115 ring-2 ring-offset-1 ring-blue-500 shadow-xs' : 'hover:scale-105 opacity-80 hover:opacity-100'
+                  }`}
+                  style={{ backgroundColor: c }}
+                  title={c}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-2 border border-slate-200/80 rounded-xl px-2.5 py-1.5 bg-slate-50">
+              <input
+                type="color"
+                value={warna}
+                onChange={(e) => setWarna(e.target.value)}
+                className="w-6 h-6 rounded-lg border-0 cursor-pointer p-0 bg-transparent"
+                title="Pilih warna kustom"
+              />
+              <span className="text-xs font-mono text-slate-600 font-semibold uppercase">{warna}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!isKategoriMode && (
         <div className="relative z-30">

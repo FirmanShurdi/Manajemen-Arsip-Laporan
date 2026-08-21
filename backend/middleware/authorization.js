@@ -3,7 +3,7 @@ const { users, role } = require("../model/association");
 const adminAuth = async (req, res, next) => {
   try {
     const userId = req.user?.id || req.user?.id_user;
-    if (!userId) return res.status(401).json({ success: false, message: "Sesi tidak valid! Silakan login ulang.", msg: "Sesi tidak valid" });
+    if (!userId) return res.status(401).json({ success: false, message: "Sesi gagal! Silakan login ulang.", msg: "Sesi tidak valid" });
 
     const user = await users.findByPk(userId, {
       include: [{ model: role, attributes: ['id_role', 'nama', 'tipe_role'] }]

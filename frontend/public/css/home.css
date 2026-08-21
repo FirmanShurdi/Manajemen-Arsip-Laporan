@@ -66,9 +66,10 @@
 }
 
 .search-container-wrapper {
-    position: relative;
+    position: sticky;
+    top: 90px;
     margin-top: -55px;
-    z-index: 10;
+    z-index: 990;
     display: flex;
     justify-content: center;
     padding: 0 20px;
@@ -77,13 +78,14 @@
 .search-container {
     background: white;
     border-radius: 30px;
-    padding: 20px 30px;
+    padding: 16px 28px;
     display: flex;
     align-items: center;
     gap: 20px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
     width: 100%;
     max-width: 1050px;
+    transition: box-shadow 0.3s ease;
 }
 
 .dropdown-box {
@@ -173,7 +175,7 @@
 .services-section {
     position: relative;
     padding: 60px 0 120px;
-    scroll-margin-top: 65px;
+    scroll-margin-top: 160px;
     background-color: #eef2f6;
     background-image:
         linear-gradient(177deg, #ffffff 18%, transparent 18.1%),
@@ -237,6 +239,7 @@
         grid-template-columns: repeat(3, 1fr);
         gap: 32px;
     }
+
     .services-container {
         max-width: 1380px;
     }

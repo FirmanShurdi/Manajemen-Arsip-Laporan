@@ -33,6 +33,10 @@ const arsip = db.define("arsip", {
         type: DataTypes.STRING(150),
         allowNull: false
     },
+    warna: {
+        type: DataTypes.STRING(20),
+        defaultValue: "#3B82F6"
+    },
     deskripsi: DataTypes.TEXT,
     foto: DataTypes.STRING(255),
     created_at: {

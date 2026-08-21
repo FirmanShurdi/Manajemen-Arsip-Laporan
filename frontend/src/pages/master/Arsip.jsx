@@ -65,7 +65,7 @@ export default function ArsipMaster() {
       let result = [...kategoriIndukList];
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
-        result = result.filter(item => 
+        result = result.filter(item =>
           (item.nama_kategori || '').toLowerCase().includes(term) ||
           (item.deskripsi || '').toLowerCase().includes(term)
         );
@@ -76,8 +76,9 @@ export default function ArsipMaster() {
 
       if (selectedParentCat) {
         result = result.filter((item) => {
-          const catId = item.id_kategori || item.kategori_arsip?.id_kategori;
-          return String(catId) === String(selectedParentCat);
+          const catId = item.id_kategori;
+          const catName = typeof item.kategori_arsip === 'object' ? item.kategori_arsip?.nama_kategori : item.kategori_arsip;
+          return String(catId) === String(selectedParentCat) || String(catName) === String(selectedParentCat);
         });
       }
 
@@ -133,12 +134,12 @@ export default function ArsipMaster() {
         addToast('success', 'Arsip dokumen berhasil dihapus!');
         fetchArsipList();
       }
-      cancelDelete();
     } catch (err) {
       const msg = err.response?.data?.message || err.response?.data?.msg || 'Gagal menghapus data.';
       addToast('error', msg);
     } finally {
       setDeleting(false);
+      cancelDelete();
     }
   };
 
@@ -172,9 +173,16 @@ export default function ArsipMaster() {
       {
         header: 'NAMA ARSIP',
         render: (item) => (
-          <span className="font-bold text-slate-900 uppercase tracking-wide">
-            {item.nama_arsip || item.nama_kategori}
-          </span>
+          <div className="flex items-center gap-2.5">
+            <span
+              className="w-3.5 h-3.5 rounded-full shrink-0 shadow-xs border border-white"
+              style={{ backgroundColor: item.warna || '#3B82F6' }}
+              title={`Warna Indikator Grafik: ${item.warna || '#3B82F6'}`}
+            />
+            <span className="font-bold text-slate-900 uppercase tracking-wide">
+              {item.nama_arsip || item.nama_kategori}
+            </span>
+          </div>
         )
       },
       {
@@ -210,11 +218,10 @@ export default function ArsipMaster() {
           setActiveTab('arsip');
           setSearchTerm('');
         }}
-        className={`py-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-          activeTab === 'arsip'
+        className={`py-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer ${activeTab === 'arsip'
             ? 'border-indigo-600 text-indigo-600 font-bold'
             : 'border-transparent text-slate-500 hover:text-slate-700'
-        }`}
+          }`}
       >
         Arsip
       </button>
@@ -224,11 +231,10 @@ export default function ArsipMaster() {
           setActiveTab('kategori');
           setSearchTerm('');
         }}
-        className={`py-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer ${
-          activeTab === 'kategori'
+        className={`py-3 text-xs md:text-sm font-semibold border-b-2 transition-all cursor-pointer ${activeTab === 'kategori'
             ? 'border-indigo-600 text-indigo-600 font-bold'
             : 'border-transparent text-slate-500 hover:text-slate-700'
-        }`}
+          }`}
       >
         Kategori Arsip
       </button>

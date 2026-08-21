@@ -27,8 +27,21 @@ export default function CustomSelect({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const isValueActive = Boolean(
+    value !== null &&
+    value !== undefined &&
+    value !== '' &&
+    value !== '0' &&
+    value !== 0 &&
+    value !== placeholder &&
+    value !== defaultLabel
+  );
+
   const activeItem = options.find((item) => String(getOptionId(item)) === String(value));
-  const activeLabel = activeItem ? getOptionLabel(activeItem) : (placeholder || defaultLabel);
+  const activeLabel = isValueActive
+    ? (activeItem ? getOptionLabel(activeItem) : String(value))
+    : (placeholder || defaultLabel);
+
   const filtered = options.filter((item) =>
     (getOptionLabel(item) || '').toLowerCase().includes(search.toLowerCase().trim())
   );
@@ -57,7 +70,7 @@ export default function CustomSelect({
         className={`w-full flex items-center justify-between gap-2 h-11 rounded-xl border py-2 ${
           showIcon ? 'pl-9' : 'pl-4'
         } pr-9 text-sm font-semibold outline-none transition-all shadow-2xs select-none ${
-          value
+          isValueActive
             ? 'border-blue-500 bg-blue-50/40 text-blue-900 font-bold'
             : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400'
         }`}
@@ -69,7 +82,7 @@ export default function CustomSelect({
         )}
         <span className="truncate cursor-pointer" title={activeLabel}>{activeLabel}</span>
         <div className="absolute right-2.5 flex items-center">
-          {value ? (
+          {isValueActive ? (
             <span
               onClick={handleClear}
               className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-bold cursor-pointer hover:bg-blue-200"
@@ -93,7 +106,7 @@ export default function CustomSelect({
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-30 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl min-w-[240px]">
+        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-xl border border-slate-200 bg-white p-2 shadow-2xl min-w-[240px]">
           {showSearch && (
             <div className="mb-2 shrink-0">
               <SearchBar value={search} onChange={(e) => setSearch(e.target.value)} onClear={() => setSearch('')} placeholder="Cari..." />

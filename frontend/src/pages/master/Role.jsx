@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../../api/axiosInstance';
 import { useFlash } from '../../hooks/useFlash';
 import { useCrudModal } from '../../hooks/useCrudModal';
-import MasterTable from '../../components/common/MasterTable';
+import RoleTable from '../../components/table/RoleTable';
 import ConfirmDeleteModal from '../../components/modal/aksi/ConfirmDeleteModal';
 import RoleFormModal from '../../components/modal/RoleFormModal';
 
@@ -46,30 +46,17 @@ export default function RoleMaster() {
     fetchRoles();
   }, [fetchRoles]);
 
-  // Client-side search filtering maksimal
+  // Client-side search filtering
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredRoles(rolesData);
     } else {
-      const searchTokens = searchTerm.toLowerCase().trim().split(/\s+/);
-
+      const term = searchTerm.toLowerCase().trim();
       setFilteredRoles(
-        rolesData.filter((r) => {
-          const isProtected = [1, 2, 3].includes(Number(r.id_role)) ? 'system default' : '';
-          const isAdmin = r.tipe_role === 'admin' || Number(r.id_role) === 1 || Number(r.id_role) === 2;
-          const accessTypeLabel = isAdmin ? 'akses full admin' : 'akses pegawai staff';
-
-          const searchableString = [
-            r.nama || '',
-            r.tipe_role || '',
-            isProtected,
-            accessTypeLabel
-          ]
-            .join(' ')
-            .toLowerCase();
-
-          return searchTokens.every((token) => searchableString.includes(token));
-        })
+        rolesData.filter((r) =>
+          (r.nama || '').toLowerCase().includes(term) ||
+          (r.tipe_role || '').toLowerCase().includes(term)
+        )
       );
     }
   }, [searchTerm, rolesData]);
@@ -87,52 +74,16 @@ export default function RoleMaster() {
     setDeleting(true);
     try {
       const res = await api.delete(`/role/${deleteItem.id_role}`);
-      addToast('success', res.data.message || 'Role berhasil dihapus!');
-      cancelDelete();
+      addToast('success', res.data?.message || 'Role berhasil dihapus!');
       fetchRoles();
     } catch (err) {
       const msg = err.response?.data?.message || err.response?.data?.msg || 'Gagal menghapus role.';
       addToast('error', msg);
     } finally {
       setDeleting(false);
+      cancelDelete();
     }
   };
-
-  const columns = useMemo(() => [
-    {
-      header: 'NAMA ROLE',
-      render: (item) => {
-        const isProtected = [1, 2, 3].includes(Number(item.id_role));
-        return (
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-900 uppercase tracking-wide">
-              {item.nama}
-            </span>
-            {isProtected && (
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200">
-                System Default
-              </span>
-            )}
-          </div>
-        );
-      }
-    },
-    {
-      header: 'TIPE HAK AKSES',
-      render: (item) => {
-        const isAdmin = item.tipe_role === 'admin';
-        return isAdmin ? (
-          <span className="inline-flex items-center px-3 py-1 text-xs md:text-sm font-bold rounded-full bg-blue-100 text-blue-900 border border-blue-300">
-            Akses Full / Admin
-          </span>
-        ) : (
-          <span className="inline-flex items-center px-3 py-1 text-xs md:text-sm font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-            Akses Pegawai
-          </span>
-        );
-      }
-    }
-  ], []);
 
   return (
     <div className="space-y-6">
@@ -154,20 +105,15 @@ export default function RoleMaster() {
         </button>
       </div>
 
-      {/* Unified Master Table Component */}
-      <MasterTable
-        columns={columns}
-        data={filteredRoles}
+      {/* Komponen Tabel Role Terpisah */}
+      <RoleTable
+        roles={filteredRoles}
         loading={loading}
         searchTerm={searchTerm}
         onSearchChange={(e) => setSearchTerm(e.target.value)}
         onSearchClear={() => setSearchTerm('')}
-        searchPlaceholder="Cari nama role..."
         onEdit={openEdit}
         onDelete={handleDeletePrompt}
-        disabledDelete={(item) => [1, 2, 3].includes(Number(item.id_role))}
-        deleteTitle={(item) => [1, 2, 3].includes(Number(item.id_role)) ? 'Role default sistem tidak dapat dihapus' : ''}
-        emptyMessage="Tidak ada data role yang ditemukan."
       />
 
       {/* Role Form Modal */}

@@ -10,36 +10,49 @@ export default function AppSidebar() {
   const [openSubmenus, setOpenSubmenus] = useState([]);
   const [subMenuHeight, setSubMenuHeight] = useState({});
 
-  const navItems = useMemo(() => [
-    { 
-      id: 'dash', 
-      name: 'Dashboard', 
-      path: '/dashboard', 
+  const user = useMemo(() => {
+    try {
+      const stored = localStorage.getItem('user');
+      return stored ? JSON.parse(stored) : null;
+    } catch (_) {
+      return null;
+    }
+  }, []);
+
+  const roleId = Number(user?.id_role || user?.role?.id_role || 3);
+  const tipeRole = user?.tipe_role || user?.role?.tipe_role || ([1, 2].includes(roleId) ? 'admin' : 'pegawai');
+  const isAdmin = tipeRole === 'admin' || [1, 2].includes(roleId);
+
+  const rawNavItems = useMemo(() => [
+    {
+      id: 'dash',
+      name: 'Dashboard',
+      path: '/dashboard',
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-          <rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>
+          <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" />
         </svg>
-      ) 
+      )
     },
-    { 
-      id: 'dokumen', 
-      name: 'Dokumen Arsip', 
-      path: '/dokumen', 
+    {
+      id: 'dokumen',
+      name: 'Dokumen Arsip',
+      path: '/dokumen',
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
         </svg>
-      ) 
+      )
     },
     {
       id: 'master',
       name: 'Data Master',
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" />
         </svg>
       ),
       subItems: [
@@ -47,39 +60,58 @@ export default function AppSidebar() {
         { name: 'Role & Hak Akses', path: '/master/role' },
       ],
     },
-    { 
-      id: 'mgmt', 
-      name: 'Manajemen User', 
-      path: '/manajemen-user', 
+    {
+      id: 'mgmt',
+      name: 'Manajemen User',
+      path: '/manajemen-user',
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
-      ) 
+      )
     },
-    { 
-      id: 'log', 
-      name: 'Log Aktivitas', 
-      path: '/log-aktivitas', 
+    {
+      id: 'log',
+      name: 'Log Aktivitas',
+      path: '/log-aktivitas',
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-          <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+          <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+          <line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
         </svg>
-      ) 
+      )
     },
-    { 
-      id: 'kembali', 
-      name: 'Kembali ke Beranda', 
-      path: '/', 
+    {
+      id: 'kembali',
+      name: 'Kembali ke Beranda',
+      path: '/#kategori',
       icon: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
         </svg>
-      ) 
+      )
     },
   ], []);
+
+  const navItems = useMemo(() => {
+    return rawNavItems.reduce((acc, item) => {
+      // Sembunyikan Manajemen User dan Log Aktivitas untuk Pegawai
+      if (!isAdmin && ['mgmt', 'log'].includes(item.id)) {
+        return acc;
+      }
+
+      // Untuk Data Master: jika Pegawai, filter subItems agar hanya menampilkan Kategori Dokumen
+      if (!isAdmin && item.id === 'master') {
+        const filteredSubItems = item.subItems?.filter(sub => sub.path === '/master/kategori' || sub.path === '/master/arsip') || [];
+        acc.push({ ...item, subItems: filteredSubItems });
+        return acc;
+      }
+
+      acc.push(item);
+      return acc;
+    }, []);
+  }, [rawNavItems, isAdmin]);
 
   const isActive = useCallback((path) => location.pathname === path, [location.pathname]);
 
@@ -127,9 +159,9 @@ export default function AppSidebar() {
       {/* Sidebar Header / Brand Logo */}
       <div className="flex h-16 items-center justify-center border-b border-gray-200">
         <Link to="/" className="flex items-center gap-3">
-          <img 
-            src="/kementrianperhubungan.png" 
-            alt="Logo Kemenhub" 
+          <img
+            src="/kementrianperhubungan.png"
+            alt="Logo Kemenhub"
             className="h-9 w-9 object-contain"
           />
           {isSidebarWide && (
@@ -173,11 +205,11 @@ export default function AppSidebar() {
                         {isSidebarWide && (
                           <>
                             <span className="flex-grow text-left">{item.name}</span>
-                            <svg 
+                            <svg
                               className={`h-4 w-4 shrink-0 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
                               viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
                             >
-                              <path d="m6 9 6 6 6-6"/>
+                              <path d="m6 9 6 6 6-6" />
                             </svg>
                           </>
                         )}
@@ -192,13 +224,12 @@ export default function AppSidebar() {
                           <ul className="mt-1 ml-9 space-y-1">
                             {item.subItems.map(subItem => (
                               <li key={subItem.name}>
-                                <Link 
-                                  to={subItem.path} 
-                                  className={`block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                                    isActive(subItem.path)
-                                      ? 'text-blue-600 font-semibold bg-blue-50/60'
-                                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                                  }`}
+                                <Link
+                                  to={subItem.path}
+                                  className={`block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive(subItem.path)
+                                    ? 'text-blue-600 font-semibold bg-blue-50/60'
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                                    }`}
                                 >
                                   {subItem.name}
                                 </Link>

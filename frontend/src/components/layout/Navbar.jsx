@@ -54,7 +54,8 @@ const Navbar = () => {
       }
 
       if (kategoriSection) {
-        if (scrollY >= kategoriSection.offsetTop - 150) {
+        const rect = kategoriSection.getBoundingClientRect();
+        if (rect.top <= 250) {
           setActiveLink('Arsip');
         } else {
           setActiveLink('Beranda');
@@ -83,7 +84,7 @@ const Navbar = () => {
 
   return (
     <header className={headerClass}>
-      <Link to="/" className="logo-area">
+      <Link to="/" className="logo-area" onClick={() => setActiveLink('Beranda')}>
         <img src="/kementrianperhubungan.png" alt="Logo Kemenhub" className="logo-img" />
         <div className="logo-text">
           <div className="logo-title">KSOP-K</div>
@@ -97,8 +98,8 @@ const Navbar = () => {
       </Link>
 
       <nav className="nav-pill">
-        <Link to="/" className={`nav-link ${activeLink === 'Beranda' ? 'active' : ''}`}>Beranda</Link>
-        <a href="#kategori" className={`nav-link ${activeLink === 'Arsip' ? 'active' : ''}`}>Arsip</a>
+        <Link to="/" className={`nav-link ${activeLink === 'Beranda' ? 'active' : ''}`} onClick={() => setActiveLink('Beranda')}>Beranda</Link>
+        <a href="#kategori" className={`nav-link ${activeLink === 'Arsip' ? 'active' : ''}`} onClick={() => setActiveLink('Arsip')}>Arsip</a>
         <a href="#" className="nav-link">Visi Misi</a>
         <a href="#" className="nav-link">Q&A</a>
       </nav>

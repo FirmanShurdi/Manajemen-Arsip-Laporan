@@ -26,20 +26,25 @@ function App() {
         {/* Public Login Route */}
         <Route path="/login" element={<Auth />} />
 
-        {/* Dashboard Layout (Protected for Superadmin: id 1 & Koordinator: id 2 / tipe_role: admin) */}
-        <Route element={<ProtectedRoute allowedRoles={[1, 2]} />}>
+        {/* Layout Utama Terproteksi untuk Seluruh User Terautentikasi (Admin & Pegawai) */}
+        <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
+            {/* Rute Umum yang Dapat Diakses Pegawai & Admin */}
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dokumen" element={<Dokumen />} />
             <Route path="/dokumen/tambah" element={<TambahDokumen />} />
             <Route path="/dokumen/edit/:id" element={<EditDokumen />} />
             <Route path="/master/kategori" element={<ArsipMaster />} />
             <Route path="/master/arsip" element={<ArsipMaster />} />
-            <Route path="/master/role" element={<RoleMaster />} />
-            <Route path="/log-aktivitas" element={<Dashboard />} />
-            <Route path="/manajemen-user" element={<UserMaster />} />
             <Route path="/profile" element={<Dashboard />} />
             <Route path="/settings" element={<Dashboard />} />
+
+            {/* Rute Khusus Admin & Koordinator (Superadmin: 1, Koordinator: 2 / tipe_role: admin) */}
+            <Route element={<ProtectedRoute allowedTypes={['admin']} allowedRoles={[1, 2]} />}>
+              <Route path="/master/role" element={<RoleMaster />} />
+              <Route path="/log-aktivitas" element={<Dashboard />} />
+              <Route path="/manajemen-user" element={<UserMaster />} />
+            </Route>
           </Route>
         </Route>
 

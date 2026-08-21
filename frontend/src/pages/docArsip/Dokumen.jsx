@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../api/axiosInstance';
 import DokumenTable from '../../components/table/DokumenTable';
 import Pagination from '../../components/common/Pagination';
@@ -18,6 +18,23 @@ const rowsPerPageOptions = ['5', '10', '20', '50', 'Semua'];
 
 export default function Dokumen() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const getInitialFilter = (urlParam, storageKey) => {
+    if (urlParam) return urlParam;
+    try {
+      const saved = sessionStorage.getItem('active_arsip_filter');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed[storageKey] || '';
+      }
+    } catch (_) { }
+    return '';
+  };
+
+  const initialArsipFromUrl = searchParams.get('id_arsip') || searchParams.get('arsip') || '';
+  const initialMainCatFromUrl = searchParams.get('id_kategori') || searchParams.get('kategori') || '';
+
   const { toasts, addToast, removeToast } = useFlash();
   const {
     deleteItem,
@@ -34,8 +51,8 @@ export default function Dokumen() {
 
   const [selectedViewFile, setSelectedViewFile] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMainCategory, setSelectedMainCategory] = useState('');
-  const [selectedArsip, setSelectedArsip] = useState('');
+  const [selectedMainCategory, setSelectedMainCategory] = useState(() => getInitialFilter(initialMainCatFromUrl, 'selectedMainCategory'));
+  const [selectedArsip, setSelectedArsip] = useState(() => getInitialFilter(initialArsipFromUrl, 'selectedArsip'));
   const [dateFilterType, setDateFilterType] = useState('created_at');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -45,8 +62,20 @@ export default function Dokumen() {
   const [totalPages, setTotalPages] = useState(0);
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'DESC' });
 
+  // Sync state dengan URL params ketika halaman diakses/diklik dari Card Dashboard
   useEffect(() => {
-    // Fetch Sub-Arsip List & derive Kategori Utama fallback
+    const urlArsip = searchParams.get('id_arsip') || searchParams.get('arsip');
+    const urlCat = searchParams.get('id_kategori') || searchParams.get('kategori');
+    if (urlArsip !== null && urlArsip !== undefined) {
+      setSelectedArsip(urlArsip);
+    }
+    if (urlCat !== null && urlCat !== undefined) {
+      setSelectedMainCategory(urlCat);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+
     api.get('/kategori-dokumen')
       .then(res => {
         if (res.data?.success) {
@@ -55,11 +84,11 @@ export default function Dokumen() {
 
           const uniqueCategories = [];
           const seen = new Set();
-          
+
           list.forEach(item => {
             const catId = item.id_kategori || item.id_arsip;
             const catName = typeof item.kategori_arsip === 'object' ? item.kategori_arsip?.nama_kategori : item.kategori_arsip;
-            
+
             if (catName && !seen.has(catName)) {
               seen.add(catName);
               uniqueCategories.push({
@@ -83,21 +112,36 @@ export default function Dokumen() {
           setMainCategoryList(res.data.datas);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
+
+  // Simpan filter aktif ke sessionStorage agar tidak hilang saat navigasi ke Dashboard & balik lagi
+  useEffect(() => {
+    if (selectedArsip || selectedMainCategory) {
+      sessionStorage.setItem('active_arsip_filter', JSON.stringify({
+        selectedArsip,
+        selectedMainCategory
+      }));
+    } else {
+      sessionStorage.removeItem('active_arsip_filter');
+    }
+  }, [selectedArsip, selectedMainCategory]);
 
   const fetchDokumenData = useCallback(async () => {
     setLoading(true);
     const limit = rowsPerPage === 'Semua' ? 0 : parseInt(rowsPerPage, 10);
     try {
-      const params = { 
-        page: currentPage, 
-        limit, 
-        searchTerm, 
-        id_arsip: selectedArsip,
-        id_kategori: selectedMainCategory, 
-        sort: sortConfig.direction, 
-        data_name: sortConfig.key 
+      const validCategory = (selectedMainCategory && !['Semua', 'Semua Kategori Arsip', 'Semua Nama Arsip', 'Semua Kategori Utama'].includes(selectedMainCategory)) ? selectedMainCategory : '';
+      const validArsip = (selectedArsip && !['Semua', 'Semua Kategori Arsip', 'Semua Nama Arsip', 'Semua Kategori Utama'].includes(selectedArsip)) ? selectedArsip : '';
+
+      const params = {
+        page: currentPage,
+        limit,
+        searchTerm,
+        id_arsip: validArsip,
+        id_kategori: validCategory,
+        sort: sortConfig.direction,
+        data_name: sortConfig.key
       };
 
       if (startDate || endDate) {
@@ -146,128 +190,128 @@ export default function Dokumen() {
     <>
       <Flash toasts={toasts} removeToast={removeToast} />
       <div className="space-y-6">
-      
-      {/* File Viewer Pop-Up Fullscreen Modal */}
-      <FileViewer
-        isOpen={!!selectedViewFile}
-        file={selectedViewFile}
-        onClose={() => setSelectedViewFile(null)}
-      />
 
-      {/* Delete Confirmation Modal */}
-      <ConfirmDeleteModal
-        isOpen={Boolean(deleteItem)}
-        title="Hapus Dokumen Arsip?"
-        itemName={deleteItem?.nama_dokumen || ''}
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
-        loading={deleting}
-      />
+        {/* File Viewer Pop-Up Fullscreen Modal */}
+        <FileViewer
+          isOpen={!!selectedViewFile}
+          file={selectedViewFile}
+          onClose={() => setSelectedViewFile(null)}
+        />
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Manajemen Arsip Dokumen</h1>
-          <p className="text-xs md:text-sm text-slate-500">Kelola dan tinjau seluruh dokumen arsip digital perusahaan.</p>
+        {/* Delete Confirmation Modal */}
+        <ConfirmDeleteModal
+          isOpen={Boolean(deleteItem)}
+          title="Hapus Dokumen Arsip?"
+          itemName={deleteItem?.nama_dokumen || ''}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+          loading={deleting}
+        />
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Manajemen Arsip Dokumen</h1>
+            <p className="text-xs md:text-sm text-slate-500">Kelola dan tinjau seluruh dokumen arsip digital perusahaan.</p>
+          </div>
+          <Link to="/dokumen/tambah" className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs md:text-sm transition-all shadow-xs shrink-0">
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
+            <span>Tambah Dokumen</span>
+          </Link>
         </div>
-        <Link to="/dokumen/tambah" className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs md:text-sm transition-all shadow-xs shrink-0">
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 5v14M5 12h14" /></svg>
-          <span>Tambah Dokumen</span>
-        </Link>
-      </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm relative z-10">
-        <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-wrap items-center gap-3 relative z-20 rounded-t-2xl">
-          <div className="w-full sm:w-64">
-            <SearchBar value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} onClear={() => { setSearchTerm(''); setCurrentPage(1); }} placeholder="Cari nama dokumen..." />
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm relative z-10">
+          <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-wrap items-center gap-3 relative z-20 rounded-t-2xl">
+            <div className="w-full sm:w-64">
+              <SearchBar value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} onClear={() => { setSearchTerm(''); setCurrentPage(1); }} placeholder="Cari nama dokumen..." />
+            </div>
+
+            {/* Filter Kategori Utama (kategori_arsip) */}
+            <CategoryFilter
+              selectedCategory={selectedMainCategory}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedMainCategory(val);
+                setCurrentPage(1);
+                if (selectedArsip && val) {
+                  const isValid = arsipList.some(item => {
+                    const parentId = item.id_kategori || item.id_kategori_arsip || item.kategori_arsip?.id_kategori;
+                    const parentName = typeof item.kategori_arsip === 'object' ? item.kategori_arsip?.nama_kategori : item.kategori_arsip;
+                    return (String(item.id_arsip) === String(selectedArsip)) &&
+                      (String(parentId) === String(val) || String(parentName) === String(val));
+                  });
+                  if (!isValid) setSelectedArsip('');
+                }
+              }}
+              onClear={() => { setSelectedMainCategory(''); setCurrentPage(1); }}
+              categoryOptions={mainCategoryList}
+              placeholder="Semua Kategori Arsip"
+            />
+
+            {/* Filter Sub-Arsip (arsip) */}
+            <ArsipFilter
+              selectedArsip={selectedArsip}
+              selectedCategory={selectedMainCategory}
+              onChange={(e) => { setSelectedArsip(e.target.value); setCurrentPage(1); }}
+              onClear={() => { setSelectedArsip(''); setCurrentPage(1); }}
+              arsipOptions={arsipList}
+              placeholder="Semua Nama Arsip"
+            />
+
+            {/* Filter Rentang Tanggal Terpadu (Diunggah vs Terbit) */}
+            <DateRangeFilter
+              dateType={dateFilterType}
+              startDate={startDate}
+              endDate={endDate}
+              onApply={(filterData) => {
+                if (filterData) {
+                  if (filterData.dateType) setDateFilterType(filterData.dateType);
+                  setStartDate(filterData.startDate || '');
+                  setEndDate(filterData.endDate || '');
+                  if (filterData.startDate || filterData.endDate) {
+                    setRowsPerPage('Semua');
+                  }
+                }
+                setCurrentPage(1);
+              }}
+              onClear={() => {
+                setStartDate('');
+                setEndDate('');
+                setRowsPerPage('5');
+                setCurrentPage(1);
+              }}
+            />
           </div>
 
-          {/* Filter Kategori Utama (kategori_arsip) */}
-          <CategoryFilter 
-            selectedCategory={selectedMainCategory} 
-            onChange={(e) => { 
-              const val = e.target.value;
-              setSelectedMainCategory(val); 
-              setCurrentPage(1); 
-              if (selectedArsip && val) {
-                const isValid = arsipList.some(item => {
-                  const parentId = item.id_kategori || item.id_kategori_arsip || item.kategori_arsip?.id_kategori;
-                  const parentName = typeof item.kategori_arsip === 'object' ? item.kategori_arsip?.nama_kategori : item.kategori_arsip;
-                  return (String(item.id_arsip) === String(selectedArsip)) && 
-                         (String(parentId) === String(val) || String(parentName) === String(val));
-                });
-                if (!isValid) setSelectedArsip('');
-              }
-            }} 
-            onClear={() => { setSelectedMainCategory(''); setCurrentPage(1); }} 
-            categoryOptions={mainCategoryList} 
-            placeholder="Semua Kategori Arsip"
-          />
-
-          {/* Filter Sub-Arsip (arsip) */}
-          <ArsipFilter 
-            selectedArsip={selectedArsip} 
-            selectedCategory={selectedMainCategory}
-            onChange={(e) => { setSelectedArsip(e.target.value); setCurrentPage(1); }} 
-            onClear={() => { setSelectedArsip(''); setCurrentPage(1); }} 
-            arsipOptions={arsipList} 
-            placeholder="Semua Nama Arsip"
-          />
-
-          {/* Filter Rentang Tanggal Terpadu (Diunggah vs Terbit) */}
-          <DateRangeFilter
-            dateType={dateFilterType}
-            startDate={startDate}
-            endDate={endDate}
-            onApply={(filterData) => {
-              if (filterData) {
-                if (filterData.dateType) setDateFilterType(filterData.dateType);
-                setStartDate(filterData.startDate || '');
-                setEndDate(filterData.endDate || '');
-                if (filterData.startDate || filterData.endDate) {
-                  setRowsPerPage('Semua');
+          {loading ? (
+            <div className="py-16 text-center text-slate-400 text-xs font-semibold">Memuat data dokumen...</div>
+          ) : (
+            <DokumenTable
+              dokumenItems={dokumenItems}
+              onEdit={(item) => {
+                const targetId = item?.id_dokumen || item?.id || item?.id_arsip;
+                if (targetId) {
+                  navigate(`/dokumen/edit/${targetId}`);
                 }
-              }
-              setCurrentPage(1);
-            }}
-            onClear={() => {
-              setStartDate('');
-              setEndDate('');
-              setRowsPerPage('5');
-              setCurrentPage(1);
-            }}
-          />
-        </div>
+              }}
+              onDelete={promptDelete}
+              onViewFile={(file) => setSelectedViewFile(file)}
+              onSort={(key) => {
+                setSortConfig(prev => ({
+                  key,
+                  direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
+                }));
+              }}
+              sortConfig={sortConfig}
+              startIndex={startIndex}
+            />
+          )}
 
-        {loading ? (
-          <div className="py-16 text-center text-slate-400 text-xs font-semibold">Memuat data dokumen...</div>
-        ) : (
-          <DokumenTable 
-            dokumenItems={dokumenItems} 
-            onEdit={(item) => {
-              const targetId = item?.id_dokumen || item?.id || item?.id_arsip;
-              if (targetId) {
-                navigate(`/dokumen/edit/${targetId}`);
-              }
-            }}
-            onDelete={promptDelete} 
-            onViewFile={(file) => setSelectedViewFile(file)}
-            onSort={(key) => {
-              setSortConfig(prev => ({
-                key,
-                direction: prev.key === key && prev.direction === 'ASC' ? 'DESC' : 'ASC'
-              }));
-            }}
-            sortConfig={sortConfig}
-            startIndex={startIndex}
-          />
-        )}
-
-        <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-b-2xl">
-          <RowsPerPageSelect options={rowsPerPageOptions} value={rowsPerPage} onChange={(e) => { setRowsPerPage(e.target.value); setCurrentPage(1); }} totalItems={totalData} />
-          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={(page) => setCurrentPage(page)} />
+          <div className="p-4 border-t border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-b-2xl">
+            <RowsPerPageSelect options={rowsPerPageOptions} value={rowsPerPage} onChange={(e) => { setRowsPerPage(e.target.value); setCurrentPage(1); }} totalItems={totalData} />
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={(page) => setCurrentPage(page)} />
+          </div>
         </div>
       </div>
-    </div>
-  </>
-);
+    </>
+  );
 }
